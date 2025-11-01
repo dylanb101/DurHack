@@ -45,12 +45,9 @@ export default function SecondPage() {
       {/* Left side - Navigation */}
       <div className="w-[35%] h-full bg-white shadow-lg p-8 flex flex-col justify-center items-center">
         <div className="mb-8 text-center">
-          <p className="text-gray-700 mb-6">
-            There are {totalImages} images uploaded, each image contains {boxesPerImage} pieces for which the buttons 
-            will go through. Once we have reached {boxesPerImage}, we will move to the next uploaded image.
-          </p>
           <div className="text-sm text-gray-600 space-y-2">
             <div>Image: <span className="font-semibold">{currentImage + 1} / {totalImages}</span></div>
+            
             <div>Box: <span className="font-semibold">{currentBox + 1} / {boxesPerImage}</span></div>
           </div>
         </div>
