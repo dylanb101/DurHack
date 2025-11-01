@@ -17,4 +17,4 @@ If you are developing a production application, we recommend using TypeScript wi
 
 
 # Running Locally
-run the command `npm run dev`
+Run the command `npm run dev`
