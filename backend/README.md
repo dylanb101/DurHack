@@ -10,3 +10,7 @@ pip install -r requirements.txt # Install dependencies
 # To run the Backend locally
 source venv/bin/activate
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+
+## Put installed packages into requirements
+Need to be in the virtual env
+pip freeze > requirements.txt
