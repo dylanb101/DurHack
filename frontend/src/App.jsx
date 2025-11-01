@@ -1,12 +1,22 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 
-export default function App() {
+export default function TextToSpeechApp() {
   const [text, setText] = useState('');
-  const [response, setResponse] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [audioUrl, setAudioUrl] = useState(null);
   const [error, setError] = useState(null);
 
-  const handleSubmit = async () => {
+  const base64ToBlob = (base64, mimeType) => {
+    const byteCharacters = atob(base64);
+    const byteNumbers = new Array(byteCharacters.length);
+    for (let i = 0; i < byteCharacters.length; i++) {
+      byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+    const byteArray = new Uint8Array(byteNumbers);
+    return new Blob([byteArray], { type: mimeType });
+  };
+
+  const generateSpeech = async () => {
     if (!text.trim()) {
       setError('Please enter some text');
       return;
@@ -14,83 +24,109 @@ export default function App() {
 
     setLoading(true);
     setError(null);
-    setResponse(null);
+    
+    // Clean up previous audio URL
+    if (audioUrl) {
+      URL.revokeObjectURL(audioUrl);
+      setAudioUrl(null);
+    }
 
     try {
-      const res = await fetch('http://localhost:8000/api/echo', {
+      const response = await fetch('http://localhost:8000/api/text-to-speech', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ text }),
+        body: JSON.stringify({
+          text: text
+        }),
       });
 
-      if (!res.ok) {
-        throw new Error('Failed to send text');
+      if (!response.ok) {
+        throw new Error('Failed to generate speech');
       }
 
-      const data = await res.json();
-      setResponse(data);
+      const data = await response.json();
+      
+      // Convert base64 to blob and create URL
+      const audioBlob = base64ToBlob(data.audio, 'audio/mpeg');
+      const url = URL.createObjectURL(audioBlob);
+      setAudioUrl(url);
+      
     } catch (err) {
-      setError(err.message);
+      setError(err.message || 'An error occurred');
     } finally {
       setLoading(false);
     }
   };
 
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      generateSpeech();
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg shadow-xl p-8 w-full max-w-md">
-        <h1 className="text-3xl font-bold text-gray-800 mb-6 text-center">
-          Text Echo API
-        </h1>
-        
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Enter your text:
-            </label>
-            <input
-              type="text"
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSubmit()}
-              placeholder="Type something..."
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
-            />
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 p-8 flex items-center justify-center">
+      <div className="max-w-2xl w-full">
+        <div className="bg-white rounded-2xl shadow-xl p-8">
+          <div className="flex items-center gap-3 mb-6">
+            <span className="text-4xl">🔊</span>
+            <h1 className="text-3xl font-bold text-gray-800">Text to Speech</h1>
           </div>
 
-          <button
-            onClick={handleSubmit}
-            disabled={loading}
-            className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white font-semibold py-2 px-4 rounded-lg transition duration-200"
-          >
-            {loading ? 'Sending...' : 'Send to API'}
-          </button>
-
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
-              <p className="font-medium">Error:</p>
-              <p>{error}</p>
+            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700">
+              <span>⚠️</span>
+              <span>{error}</span>
             </div>
           )}
 
-          {response && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-              <p className="font-medium text-green-800 mb-2">Response from API:</p>
-              <div className="bg-white p-3 rounded border border-green-300">
-                <p className="text-sm text-gray-600 mb-1">Message: {response.message}</p>
-                <p className="text-sm font-medium text-gray-800">Received: "{response.received_text}"</p>
-              </div>
+          <div className="space-y-4">
+            {/* Text Input */}
+            <div>
+              <textarea
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                onKeyPress={handleKeyPress}
+                placeholder="Type your text here and press Enter..."
+                className="w-full h-40 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none text-lg"
+              />
             </div>
-          )}
-        </div>
 
-        <div className="mt-6 text-xs text-gray-500 text-center">
-          Make sure the FastAPI server is running on localhost:8000
+            {/* Generate Button */}
+            <button
+              onClick={generateSpeech}
+              disabled={loading || !text.trim()}
+              className="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-gray-300 text-white font-semibold py-4 px-6 rounded-lg transition-colors flex items-center justify-center gap-2 text-lg"
+            >
+              {loading ? (
+                <>
+                  <span className="inline-block animate-spin">⏳</span>
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <span>🎵</span>
+                  Generate Speech
+                </>
+              )}
+            </button>
+
+            {/* Hidden Audio Player */}
+            {audioUrl && (
+              <audio
+                src={audioUrl}
+                autoPlay
+                style={{ display: 'none' }}
+              >
+                Your browser does not support audio playback.
+              </audio>
+            )}
+          </div>
         </div>
       </div>
     </div>
   );
 }
-
