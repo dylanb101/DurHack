@@ -35,7 +35,7 @@ def find_corners(points, angle_threshold=30, window=5):
 
 # Load simplified points
 
-simplified_points = np.loadtxt("simplified.csv", delimiter=",", skiprows=1)
+simplified_points = np.loadtxt("jigsaw_piece.csv", delimiter=",", skiprows=1)
 
 # Detect corners
 
