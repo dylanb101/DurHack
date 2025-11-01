@@ -2,6 +2,7 @@
 # If Beginning to Develop
 Run the commands below before first starting the backend server.
 
+Copy the .env.example file and remove the .example from the name.
 
 python3 -m venv venv  # Create the virtual environment
 source venv/bin/activate # Activate it

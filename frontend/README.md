@@ -17,4 +17,5 @@ If you are developing a production application, we recommend using TypeScript wi
 
 
 # Running Locally
+Copy the .env.example file and remove the .example from the name.
 Run the command `npm run dev`
