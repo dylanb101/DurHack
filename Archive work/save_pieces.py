@@ -118,3 +118,4 @@ if __name__ == "__main__":
     save_pickle(out_pickle, pieces)
     save_json(out_json, pieces)
     print(f"Saved {len(pieces)} pieces to:\n  {out_pickle}\n  {out_json}")
+    
