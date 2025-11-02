@@ -57,9 +57,17 @@ for item1, item2 in zip(data1, data2):
 
     # --------------------------------------
     import matplotlib.pyplot as plt
+    from matplotlib import image as mpimg
 
-    fig, axes = plt.subplots(2, 2, figsize=(12, 12))
-    axes = axes.flatten()
+    # Create 3x3 grid
+    fig, axes = plt.subplots(3, 3, figsize=(18, 18))
+
+    coords = (
+        (0, 1),
+        (1, 2),
+        (2, 1),
+        (1, 0),
+    )
 
     for i, edge_dict in enumerate(all_edges):
         edge = edge_dict['pts']
@@ -67,25 +75,41 @@ for item1, item2 in zip(data1, data2):
         # Extract x and y coordinates
         x_coords = [point[0] for point in edge]
         y_coords = [point[1] for point in edge]
+
+        x, y = coords[i]
         
-        # Plot on the corresponding subplot
-        axes[i].plot(x_coords, y_coords, 'b-', linewidth=2)
-        axes[i].scatter(x_coords[0], y_coords[0], c='green', s=100, zorder=5, label='Start')
-        axes[i].scatter(x_coords[-1], y_coords[-1], c='red', s=100, zorder=5, label='End')
-        axes[i].set_title(ftype)
-        axes[i].set_aspect('equal')
-        axes[i].legend()
-        axes[i].grid(True, alpha=0.3)
+        # Plot on the corresponding subplot using grid coordinates
+        axes[y, x].plot(x_coords, y_coords, 'b-', linewidth=2)
+        axes[y, x].scatter(x_coords[0], y_coords[0], c='green', s=100, zorder=5, label='Start')
+        axes[y, x].scatter(x_coords[-1], y_coords[-1], c='red', s=100, zorder=5, label='End')
+        axes[y, x].set_title(ftype)
+        axes[y, x].set_aspect('equal')
+        axes[y, x].legend()
+        axes[y, x].grid(True, alpha=0.3)
+        axes[y, x].invert_yaxis()  # Invert y-axis so 0 is at the top
+
+    # Add image at coordinate (1, 1)
+    img = mpimg.imread('images/' + item2['file_name'])
+    axes[1, 1].imshow(img)
+    axes[1, 1].set_title("Your Image")
+    axes[1, 1].axis('off')  # Hide axes for the image
+
+    # Hide unused subplots
+    for i in range(3):
+        for j in range(3):
+            if (j, i) not in coords and not (i == 1 and j == 1):
+                axes[i, j].axis('off')
 
     plt.tight_layout()
     plt.show()
     # --------------------------------------
+    img = mpimg.imread('images/' + item2['file_name'])
 
     piece = PuzzlePiece(
         centre=tuple(item1["piece_centre"]),
         corners=corners,
         image_path=item2["file_name"],
-        edges=[],
+        edges=all_edges,
         contour=contour,
     )
     pieces.append(piece)
