@@ -29,7 +29,7 @@ class Edge:
         y = np.interp(t_new, t, self.curve[:, 1])
         normalized_curve = np.vstack((x, y)).T
 
-        # Center around (0, 0)
+        #Centre around (0, 0)
         centroid = np.mean(normalized_curve, axis=0)
         normalized_curve -= centroid
 
@@ -42,23 +42,53 @@ class Edge:
         else:
             return False
 
+from typing import List, Tuple
+import numpy as np
+import cv2
+
 class PuzzlePiece:
-     def __init__(
+    def __init__(
         self,
-        center: Tuple[float, float],
+        centre: Tuple[float, float],
         corners: List[Tuple[float, float]],
         contour: List[Tuple[float, float]],
         image_path: str,
         edges: List[Edge],
+        edge_types: List[str] = None,
     ):
-        self.center = center
+        self.centre = centre
         self.corners = corners
         self.image_path = image_path
-        self.edges = edges
         self.contour = contour
+        self.edge_types = edge_types if edge_types else ["FLAT"] * len(corners)
+        self.edges = self._create_edges()
 
+    def _create_edges(self) -> List[Edge]:
+        """Create four edges from the four corners."""
+        edges = []
+        num_corners = len(self.corners)
+        
+        for i in range(num_corners):
+            corner1 = self.corners[i]
+            corner2 = self.corners[(i + 1) % num_corners]
+            
+            # Use find_edge method to get the contour segment
+            edge_curve = self.find_edge(corner1, corner2)
+            
+            # Create an Edge object with the correct type
+            edge = Edge(
+                type_=self.edge_types[i],
+                curve=edge_curve,
+                name=f"edge_{i}",
+                contour_map=[corner1, corner2],
+                direction="horizontal" if i % 2 == 0 else "vertical"
+            )
+            edges.append(edge)
+        
+        return edges
 
-     def find_edge(self, corner1: Tuple[float, float], corner2: Tuple[float, float]) -> np.ndarray:
+    def find_edge(self, corner1: Tuple[float, float], corner2: Tuple[float, float]) -> np.ndarray:
+        """Find the contour segment between two corners."""
         # Find contour points closest to each corner
         contour_array = np.array(self.contour)
         
@@ -76,5 +106,3 @@ class PuzzlePiece:
             edge_segment = np.vstack([contour_array[idx1:], contour_array[:idx2+1]])
         
         return edge_segment
-        
-
