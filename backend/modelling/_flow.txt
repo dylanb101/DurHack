@@ -1,0 +1,15 @@
+
+1. Run piece_extractor/extract.py to convert scanned images into individual images (& contours)
+
+----- TO TRAIN -----
+
+2. Move images in output/ to a copy of feature_detect/labels-copy (renamed as feature_detect/labels)
+
+3. Run append_corners.py to add corners from training data
+
+4. Run train command:
+yolo detect train data=data.yaml model=yolov8n.pt epochs=100 imgsz=640 batch=16 project=jigsaw name=corner_detection
+
+---------------------
+
+5. Use detect.py to extract all features with inference and give output JSON
