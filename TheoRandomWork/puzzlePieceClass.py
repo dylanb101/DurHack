@@ -55,20 +55,26 @@ class PuzzlePiece:
         self.corners = corners
         self.image_path = image_path
         self.edges = edges
-        
-        # Load image and find contour
-        img = cv2.imread(self.image_path, cv2.IMREAD_GRAYSCALE)
-        if img is not None:
-            _, binary = cv2.threshold(img, 127, 255, cv2.THRESH_BINARY)
-            contours, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-            if contours:
-                # Get largest contour
-                largest_contour = max(contours, key=cv2.contourArea)
-                # Convert to list of tuples
-                self.contour = [(float(pt[0][0]), float(pt[0][1])) for pt in largest_contour]
-            else:
-                self.contour = contour  # fallback to provided contour
-        else:
-            self.contour = contour  # fallback to provided contour
+        self.contour = contour
 
+
+     def find_edge(self, corner1: Tuple[float, float], corner2: Tuple[float, float]) -> np.ndarray:
+        # Find contour points closest to each corner
+        contour_array = np.array(self.contour)
+        
+        dist1 = np.linalg.norm(contour_array - corner1, axis=1)
+        dist2 = np.linalg.norm(contour_array - corner2, axis=1)
+        
+        idx1 = np.argmin(dist1)
+        idx2 = np.argmin(dist2)
+        
+        # Extract the contour segment between the two indices
+        if idx1 < idx2:
+            edge_segment = contour_array[idx1:idx2+1]
+        else:
+            # Wrap around if needed
+            edge_segment = np.vstack([contour_array[idx1:], contour_array[:idx2+1]])
+        
+        return edge_segment
+        
 
