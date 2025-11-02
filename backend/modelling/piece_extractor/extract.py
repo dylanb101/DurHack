@@ -1,6 +1,7 @@
 import os
 import cv2
 import numpy as np
+import json
 
 GREY_THRES = 50
 AREA_MIN = 10_000
@@ -9,9 +10,11 @@ AREA_MAX = 10_000_000
 COMPONENT_PADDING = 30
 
 TOT_IMGS = 0
+output_contours_data = []
 
 def decompose_photo(img_name):
     global TOT_IMGS
+
 
     img = cv2.imread(img_name)
     _, img = cv2.threshold(
@@ -45,13 +48,22 @@ def decompose_photo(img_name):
             )
 
             # Export the puzzle piece
-            cv2.imwrite(f'output/output_{TOT_IMGS:02d}.png', component_mask)
+            f_name = f'output_{TOT_IMGS:02d}.png'
+            cv2.imwrite(f'output/{f_name}', component_mask)
+
+            contours, _ = cv2.findContours(component_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+            assert len(contours) == 1
+
+            output_contours_data.append({
+                'file_name': f_name,
+                'contours': contours[0].squeeze().tolist()
+            })
+
+            outline = np.zeros_like(component_mask)
+            cv2.drawContours(outline, contours, -1, 255, 1)
+            cv2.imwrite(f'output_contours/output_{TOT_IMGS:02d}.png', outline)
+
             TOT_IMGS += 1
-
-            # contours, _ = cv2.findContours(component_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-
-            # outline = np.zeros_like(component_mask)
-            # cv2.drawContours(outline, contours, -1, 255, 1)
 
             # disp = cv2.resize(outline, (800, 600))
             # cv2.imshow(f'component_{i}.png', disp)
@@ -62,6 +74,9 @@ def decompose_photo(img_name):
 if __name__ == '__main__':
     for fname in os.listdir('./input_scans/'):
         decompose_photo('input_scans/' + fname)
+
+    print(len(output_contours_data))
+    with open('contour_data.json', 'w') as f: json.dump(output_contours_data, f)
 
 # cv2.waitKey(0)
 # cv2.destroyAllWindows()

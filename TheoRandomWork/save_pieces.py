@@ -7,7 +7,6 @@ import numpy as np
 
 from puzzlePieceClass import PuzzlePiece, Edge
 
-
 def build_piece_from_entry(entry: Dict[str, Any]) -> PuzzlePiece:
     """
     Build a PuzzlePiece from one JSON entry:
