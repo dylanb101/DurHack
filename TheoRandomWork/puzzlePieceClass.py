@@ -1,6 +1,6 @@
 from typing import List, Tuple
 import numpy as np
-
+import cv2
 
 class Edge:
     def __init__(
@@ -53,25 +53,22 @@ class PuzzlePiece:
     ):
         self.center = center
         self.corners = corners
-        self.contour = contour
         self.image_path = image_path
         self.edges = edges
+        
+        # Load image and find contour
+        img = cv2.imread(self.image_path, cv2.IMREAD_GRAYSCALE)
+        if img is not None:
+            _, binary = cv2.threshold(img, 127, 255, cv2.THRESH_BINARY)
+            contours, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+            if contours:
+                # Get largest contour
+                largest_contour = max(contours, key=cv2.contourArea)
+                # Convert to list of tuples
+                self.contour = [(float(pt[0][0]), float(pt[0][1])) for pt in largest_contour]
+            else:
+                self.contour = contour  # fallback to provided contour
+        else:
+            self.contour = contour  # fallback to provided contour
 
-     def _extract_edge_by_index(self, edge_index: int) -> np.ndarray:
-        """
-        Private helper to extract the curve of an edge by index.
-        """
-        if 0 <= edge_index < len(self.edges):
-            return self.edges[edge_index].curve
-        raise IndexError("Edge index out of range.")
 
-     def _find_nearest_contour_index(
-        self, point: np.ndarray, contour: np.ndarray
-    ) -> int:
-        """
-        Private helper to find the index of the nearest contour point to a given point.
-        """
-        if contour.size == 0:
-            raise ValueError("Contour is empty.")
-        distances = np.linalg.norm(contour - point, axis=1)
-        return int(np.argmin(distances))
