@@ -1,14 +1,21 @@
 # main.py
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from dotenv import load_dotenv
+from typing import List
+from datetime import datetime
+import shutil
 import httpx
 import os
 import base64
 
 load_dotenv()
 app = FastAPI()
+
+UPLOAD_DIR = "uploads"
+IMAGES_DIR = "full_images"
+os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 # Configure CORS
 app.add_middleware(
@@ -68,13 +75,84 @@ async def text_to_speech(request: TextToSpeechRequest):
         raise HTTPException(status_code=500, detail=f"ElevenLabs API error: {str(e)}")
 
 
+
 @app.post("/api/images-upload")
-async def images_upload():
+async def upload_images(files: List[UploadFile] = File(...)):
     """
     Upload multiple images to this endpoint.
-    Needs to be in NumPy array format for the ML stuff.
-
-    Think of this in a bit.
+    Each batch is in their own folder.
     """
 
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    session_dir = os.path.join(UPLOAD_DIR, f"session_{timestamp}")
+    os.makedirs(session_dir, exist_ok=True)
 
+    file_details = []
+
+    for file in files:
+        file_path = os.path.join(session_dir, file.filename)
+
+        # Save file to disk
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+
+        file_details.append({
+            "filename": file.filename,
+            "content_type": file.content_type,
+            "size": os.path.getsize(file_path)
+        })
+
+    return {"uploaded_files": file_details, "timestamp": timestamp}
+
+class PostImagesRequest(BaseModel):
+    session: str
+
+@app.post("/api/get-images-base64")
+async def list_images_base64(request: PostImagesRequest):
+    images_data = []
+    SESSION_DIR = os.path.join(UPLOAD_DIR, f"session_{request.session}")
+
+    for filename in os.listdir(SESSION_DIR):
+        file_path = os.path.join(SESSION_DIR, filename)
+        if os.path.isfile(file_path):
+            with open(file_path, "rb") as f:
+                encoded = base64.b64encode(f.read()).decode("utf-8")
+            images_data.append({
+                "filename": filename,
+                "data": f"data:image/jpeg;base64,{encoded}"
+            })
+
+    return {"images": images_data}
+
+@app.get("/api/images/latest-base64")
+async def get_latest_image_base64():
+    # Get all image files from the upload directory
+    image_files = [
+        os.path.join(IMAGES_DIR, f)
+        for f in os.listdir(IMAGES_DIR)
+        if os.path.isfile(os.path.join(IMAGES_DIR, f))
+           and f.lower().endswith((".png", ".jpg", ".jpeg"))
+    ]
+
+    if not image_files:
+        return {"error": "No images found"}
+
+    # Find the most recently modified image
+    latest_file = max(image_files, key=os.path.getmtime)
+    filename = os.path.basename(latest_file)
+
+    # Read and encode as base64
+    with open(latest_file, "rb") as f:
+        encoded_string = base64.b64encode(f.read()).decode("utf-8")
+
+    # Guess MIME type from file extension
+    if filename.lower().endswith(".png"):
+        mime = "image/png"
+    else:
+        mime = "image/jpeg"
+
+    # Return as JSON
+    return {
+        "filename": filename,
+        "data": f"data:{mime};base64,{encoded_string}"
+    }

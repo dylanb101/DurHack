@@ -10,7 +10,7 @@ createRoot(document.getElementById('root')).render(
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<FirstPage/>}/>
-        <Route path="single-piece" element={<SecondPage/>}/>
+        <Route path="single-piece/:sessionId" element={<SecondPage/>}/>
       </Routes>
     </BrowserRouter>
   </StrictMode>,

@@ -19,18 +19,29 @@ export default function FirstPage(){
 
     const handleSubmit = async () => {
         try {
-            const response = await fetch('http://localhost:8000/api/images-upload', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json',},
-                body: JSON.stringify({"images": images}),
+            const formData = new FormData();
+
+            // We need to store the File objects, not just URLs
+            const fileInputs = document.getElementById("file-upload").files;
+
+            for (let i = 0; i < fileInputs.length; i++) {
+            formData.append("files", fileInputs[i]);
+            }
+
+            const response = await fetch("http://localhost:8000/api/images-upload", {
+            method: "POST",
+            body: formData, // don't set Content-Type manually!
             });
-            console.log('Upload successful');
-            navigate("/single-piece")
-        }
-        catch (err){
-            console.log(err)
+
+            console.log("Upload successful");
+            const timestamp_response = await response.json()
+            const timestamp = timestamp_response.timestamp
+            navigate(`/single-piece/${timestamp}`);
+        } catch (err) {
+            console.log(err);
         }
     };
+
 
     return (
         <div className="min-h-screen bg-gray-50 p-8">
@@ -104,7 +115,7 @@ export default function FirstPage(){
                     <button 
                         onClick={handleSubmit}
                         disabled={images.length === 0}
-                        className="px-8 py-3 bg-blue-600 text-black font-semibold rounded-lg shadow-md hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                        className="px-8 py-3 bg-blue-600 text-black font-semibold rounded-lg shadow-md hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed disabled:hover:bg-gray-300 disabled:opacity-50 disabled:outline-none disabled:border-none transition-colors"
                     >
                         Upload Images of Puzzle Pieces
                     </button>
