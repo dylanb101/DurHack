@@ -1,6 +1,12 @@
 from puzzlePieceClass import PuzzlePiece
 import json
 
+def is_pt_inside(test_pt, top_left, bottom_right):
+    x, y = test_pt
+    x1, y1 = top_left
+    x2, y2 = bottom_right
+    return x1 <= x <= x2 and y1 <= y <= y2
+
 with open("pieces_output.json", "r") as f:
     data1 = json.load(f)
 
@@ -34,31 +40,45 @@ for item1, item2 in zip(data1, data2):
             curr_edge.append(contour[idx])
             if idx == idxs[(idx_idx + 1) % 4]:
                 break
-        
-        all_edges.append(curr_edge)
+
+        ftype = 'flat'
+        for feature in item1['features']:
+            pt1 = feature['pt1']
+            pt2 = feature['pt2']
+
+            for edge_pt in curr_edge:
+                if is_pt_inside(edge_pt, pt1, pt2):
+                    ftype = feature['type']
+
+        all_edges.append({
+            'pts': curr_edge,
+            'type': ftype
+        })
 
     # --------------------------------------
-    # import matplotlib.pyplot as plt
+    import matplotlib.pyplot as plt
 
-    # fig, axes = plt.subplots(2, 2, figsize=(12, 12))
-    # axes = axes.flatten()
+    fig, axes = plt.subplots(2, 2, figsize=(12, 12))
+    axes = axes.flatten()
 
-    # for i, edge in enumerate(all_edges):
-    #     # Extract x and y coordinates
-    #     x_coords = [point[0] for point in edge]
-    #     y_coords = [point[1] for point in edge]
+    for i, edge_dict in enumerate(all_edges):
+        edge = edge_dict['pts']
+        ftype = edge_dict['type']
+        # Extract x and y coordinates
+        x_coords = [point[0] for point in edge]
+        y_coords = [point[1] for point in edge]
         
-    #     # Plot on the corresponding subplot
-    #     axes[i].plot(x_coords, y_coords, 'b-', linewidth=2)
-    #     axes[i].scatter(x_coords[0], y_coords[0], c='green', s=100, zorder=5, label='Start')
-    #     axes[i].scatter(x_coords[-1], y_coords[-1], c='red', s=100, zorder=5, label='End')
-    #     axes[i].set_title(f'Edge {i+1}')
-    #     axes[i].set_aspect('equal')
-    #     axes[i].legend()
-    #     axes[i].grid(True, alpha=0.3)
+        # Plot on the corresponding subplot
+        axes[i].plot(x_coords, y_coords, 'b-', linewidth=2)
+        axes[i].scatter(x_coords[0], y_coords[0], c='green', s=100, zorder=5, label='Start')
+        axes[i].scatter(x_coords[-1], y_coords[-1], c='red', s=100, zorder=5, label='End')
+        axes[i].set_title(ftype)
+        axes[i].set_aspect('equal')
+        axes[i].legend()
+        axes[i].grid(True, alpha=0.3)
 
-    # plt.tight_layout()
-    # plt.show()
+    plt.tight_layout()
+    plt.show()
     # --------------------------------------
 
     piece = PuzzlePiece(
