@@ -10,7 +10,9 @@ export default function SecondPage() {
   const [images, setImages] = useState([]);
   const [currentImage, setCurrentImage] = useState(0);
   const [currentBox, setCurrentBox] = useState(0);
+  const [audioUrl, setAudioUrl] = useState(null);
   const [fullImage, setFullImage] = useState(null);
+  const [error, setError] = useState(null)
   
   var totalImages = 20;
   const boxesPerImage = 6;
@@ -18,18 +20,22 @@ export default function SecondPage() {
   const handlePrevious = () => {
     if (currentBox > 0) {
       setCurrentBox(currentBox - 1);
+      generateSpeech(`Box ${currentBox}`); 
     } else if (currentImage > 0) {
       setCurrentImage(currentImage - 1);
       setCurrentBox(boxesPerImage - 1);
+      generateSpeech(`Image ${currentImage} Box 6`);
     }
   };
 
   const handleNext = () => {
     if (currentBox < boxesPerImage - 1) {
       setCurrentBox(currentBox + 1);
+      generateSpeech(`Box ${currentBox+2}`);
     } else if (currentImage < totalImages - 1) {
       setCurrentImage(currentImage + 1);
       setCurrentBox(0);
+      generateSpeech(`Image ${currentImage+2} Box 1`);
     }
   };
 
@@ -79,6 +85,63 @@ export default function SecondPage() {
   // NOTE: Should be named the other way around, am too lazy to change - DB
   const currentIndex = images[currentImage];
 
+
+  // Text to speech function
+
+  const base64ToBlob = (base64, mimeType) => {
+    const byteCharacters = atob(base64);
+    const byteNumbers = new Array(byteCharacters.length);
+    for (let i = 0; i < byteCharacters.length; i++) {
+      byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+    const byteArray = new Uint8Array(byteNumbers);
+    return new Blob([byteArray], { type: mimeType });
+  };
+
+  const generateSpeech = async (text) => {
+    if (!text.trim()) {
+      setError('Please enter some text');
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    
+    // Clean up previous audio URL
+    if (audioUrl) {
+      URL.revokeObjectURL(audioUrl);
+      setAudioUrl(null);
+    }
+
+    try {
+      const response = await fetch('http://localhost:8000/api/text-to-speech', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          text: text
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate speech');
+      }
+
+      const data = await response.json();
+      
+      // Convert base64 to blob and create URL
+      const audioBlob = base64ToBlob(data.audio, 'audio/mpeg');
+      const url = URL.createObjectURL(audioBlob);
+      setAudioUrl(url);
+      
+    } catch (err) {
+      setError(err.message || 'An error occurred');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="relative w-full h-screen flex bg-gray-100">
       {/* Close button */}
@@ -114,6 +177,16 @@ export default function SecondPage() {
           >
             ← Previous
           </button>
+          {/* Hidden Audio Player */}
+            {audioUrl && (
+              <audio
+                src={audioUrl}
+                autoPlay
+                style={{ display: 'none' }}
+              >
+                Your browser does not support audio playback.
+              </audio>
+            )}
           <button
             onClick={handleNext}
             disabled={isAtEnd}
