@@ -6,7 +6,7 @@ from shapely.geometry import Polygon
 import numpy as np
 import math
 
-DO_DISPLAY = False
+DO_DISPLAY = True
 
 class Piece:
     def __init__(
@@ -134,100 +134,45 @@ for item1, item2 in zip(data1, data2):
 
 # PoC
 def get_area(edg1, edg2, display=False):
-    comb = np.concatenate([edg1, edg2])
+    comb = np.concatenate([edg1, edg2, [edg1[0]]])
 
     if display:
         xs = [pt[0] for pt in comb]
         ys = [pt[1] for pt in comb]
 
-        plt.clf()
-        plt.plot(xs, ys, 'k')
+        plt.plot(xs, ys)
         plt.xlabel('X')
         plt.ylabel('Y')
         plt.title('Line Plot from Coordinates')
         plt.grid(True)
+        plt.show()
 
-        plt.subplot(1, 2, 2)
-        if areas is not None and len(areas) > 0:
-            plt.plot(list(range(len(areas))), areas, 'b-')
-            plt.xlabel('Iteration')
-            plt.ylabel('Area')
-            plt.title('Area Over Time')
-            plt.grid(True)
+    return Polygon(comb).area
 
-        plt.tight_layout()
-        # plt.show()
-        plt.pause(.01)
+edg1 = pieces[0].edges[1]['pts']
+edg2 = pieces[0].edges[3]['pts']
 
-    area = Polygon(comb).area
+# def translate(x, y, contour):
+#     for pt in contour:
+#         pt[0] += x
+#         pt[1] += y
 
-    # if area < 1_000:
-    #     print(comb)
-    #     exit()
+# def rotate(theta, contour, about):
+#     cos_a = np.cos(theta)
+#     sin_a = np.sin(theta)
 
-    return area
+#     rotation_matrix = np.array([
+#         [cos_a, -sin_a],
+#         [sin_a, cos_a]
+#     ])
 
-edg1 = pieces[6].edges[1]['pts']
-edg2 = pieces[6].edges[3]['pts']
+#     about = np.array(about)
 
-def translate(x, y, contour):
-    return contour + np.array((x, y))
+#     translated = contour - about
+#     rotated = (rotation_matrix.T @ translated).T
+#     result = rotated + about
 
-def rotate(theta, contour, about=None):
-    if about is None:
-        about = np.mean(contour, axis=0)
+#     return result
 
-    cos_a = np.cos(theta)
-    sin_a = np.sin(theta)
-
-    rotation_matrix = np.array([
-        [cos_a, -sin_a],
-        [sin_a, cos_a]
-    ])
-
-    about = np.array(about)
-
-    translated = contour - about
-    rotated = (rotation_matrix @ translated.T).T
-    result = rotated + about
-
-    return result
-
-c1 = np.mean(edg1, axis=0)
-c2 = np.mean(edg2, axis=0)
-delta = c1 - c2 + np.array([100, 100])
-edg2 = translate(delta[0], delta[1], edg2)
-
-areas = []
-
-n = 0
-while True:
-    n += 1
-    curr_area = get_area(edg1, edg2, True)
-
-    areas.append((n, curr_area))
-
-    INC = 1
-    INC_R = math.pi / 1000
-
-    x_opts = min([
-        (-INC, get_area(edg1, translate(-INC, 0, edg2))),
-        (   0, curr_area),
-        ( INC, get_area(edg1, translate( INC, 0, edg2))),
-    ], key=lambda x: x[1])[0]
-
-    y_opts = min([
-        (-INC, get_area(edg1, translate(0, -INC, edg2))),
-        (   0, curr_area),
-        ( INC, get_area(edg1, translate(0,  INC, edg2))),
-    ], key=lambda x: x[1])[0]
-
-    t_opts = min([
-        (-INC_R, get_area(edg1, rotate(-INC_R, edg2))),
-        (   0, curr_area),
-        ( INC_R, get_area(edg1, rotate(INC_R, edg2))),
-    ], key=lambda x: x[1])[0]
-
-    edg2 = translate(x_opts, y_opts, edg2)
-    edg2 = rotate(t_opts, edg2)
+print(get_area(edg1, edg2, True))
 
