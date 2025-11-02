@@ -1,0 +1,10 @@
+TRAIN:
+yolo detect train data=data.yaml model=yolov8n.pt epochs=100 imgsz=640 batch=16 project=jigsaw name=corner_detection
+
+BATCH DETECT:
+yolo detect predict model=jigsaw/corner_detectionX/weights/best.pt source=dataset/images/train save=True
+
+BOUNDING BOXES WORK FOR model=jigsaw/corner_detection4/weights/best.pt
+
+BOUNDING BOXES AND CORNERS WORK FOR model=jigsaw/corner_detection5/weights/best.pt
+(although one corner has a double overlap)

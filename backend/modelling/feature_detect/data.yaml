@@ -1,0 +1,9 @@
+
+path: ./dataset
+train: ./images/train
+val: ./images/val
+
+names:
+  0: IN
+  1: OUT
+  2: Corner
